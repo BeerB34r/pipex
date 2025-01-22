@@ -130,7 +130,11 @@ char **argv
 		if (access(argv[i], F_OK))
 			return (ft_dprintf(2, "command(s) invalid: %s\n", argv[i]));
 	in = pipeline_sd(argc - 3, argv);
+	if (in < 0)
+		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
 	id = fork();
+	if (id < 0)
+		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
 	if (!id)
 	{
 		dup2(in, 0);
@@ -163,11 +167,13 @@ char **argv
 	if (in < 0)
 		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
 	id = fork();
+	if (id < 0)
+		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
 	if (!id)
 	{
 		dup2(in, 0);
 		dup2(outfile, 1);
-		execve(argv[3], NULL, NULL);
+		execve(argv[3], NULL, NULL); // TODO refactor into a function
 	}
 	while (errno != ECHILD)
 		waitpid(0, NULL, 0);
