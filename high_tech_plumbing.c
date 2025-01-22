@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 static int
 	heredoc(
@@ -118,8 +119,8 @@ int argc,
 char **argv
 )
 {
-	const int		outfile = open(argv[argc - 1], O_WRONLY | O_CREAT | O_TRUNC,
-			S_IRWXU | S_IRWXG | S_IRWXO);
+	const int		outfile = open(argv[argc - 1],
+			O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	int				in;
 	int				i;
 	pid_t			id;
@@ -136,7 +137,8 @@ char **argv
 		dup2(outfile, 1);
 		execve(argv[3], NULL, NULL);
 	}
-	waitpid(id, NULL, 0);
+	while (errno != ECHILD)
+		waitpid(0, NULL, 0);
 	close(outfile);
 	close(in);
 }
@@ -148,8 +150,7 @@ char **argv
 )
 {
 	const int		outfile = open(argv[argc - 1],	
-			O_WRONLY | O_CREAT | O_APPEND,
-			S_IRWXU | S_IRWXG | S_IRWXO);
+			O_WRONLY | O_CREAT | O_APPEND, 0644);
 	int				in;
 	int				i;
 	pid_t			id;
@@ -157,8 +158,10 @@ char **argv
 	i = 2;
 	while (++i < argc - 1)
 		if (access(argv[i], F_OK))
-			return (ft_dprintf(2, "command(s) invalid: %s\n", argv[i]));
+			return (ft_dprintf(2, "command(s) invalid: %s\n", argv[i]), 1);
 	in = pipeline_hd(argc - 3, argv);
+	if (in < 0)
+		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
 	id = fork();
 	if (!id)
 	{
@@ -166,7 +169,8 @@ char **argv
 		dup2(outfile, 1);
 		execve(argv[3], NULL, NULL);
 	}
-	waitpid(id, NULL, 0);
+	while (errno != ECHILD)
+		waitpid(0, NULL, 0);
 	close(outfile);
 	close(in);
 }
