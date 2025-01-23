@@ -11,27 +11,46 @@
 # **************************************************************************** #
 
 .PHONY			:	all clean fclean re
+.NOTPARALELL	:	re
 .DEFAULT_GOAL	=	all
 
 MAIN			=	main.c
-SRCFILES		=	pipex.c high_tech_plumbing.c
+
+SRCFILES		=	pipex.c high_tech_plumbing.c toolbox.c
 SRCDIR			=	src
-OBJFILES		=	$(SRCFILES:%.c=%.o)
+
+OBJFILES		=	$(addprefix $(OBJDIR)/,$(SRCFILES:%.c=%.o))
 OBJDIR			=	bin
+
 INCFILES		=	pipex.h libft.h
 INCDIR			=	inc libft/include
+
 LIBS			=	libft/libft.a
 define libcmd
-make -C $(1) $(2)
+	@$(MAKE) -C $(1) $(2)
 endef
 
 CC				=	cc
 CFLAGS			=	-Wall -Wextra -Werror
+VPATH			=	$(SRCDIR) $(INCDIR)
 MAKEFLAGS		+=	-j$(shell nproc) --output-sync=target --no-print-directory
 NAME			=	pipex
 
 all				:	$(NAME)
 re				:	fclean all
+$(OBJDIR)		:	; mkdir $@
 
-$(NAME)			:	$(SRCFILES) $(LIBS) $(INCFILES)
-	$(CC) $(CFLAGS) -o $@ $(addprefix -I,$(INCDIR)) $(OBJFILES) $(LIBS)
+$(NAME)			:	$(MAIN) $(OBJFILES) $(LIBS) $(INCFILES)
+	$(CC) $(CFLAGS) -o $@ $(addprefix -I,$(INCDIR)) $(OBJFILES) $(LIBS) $<
+
+$(OBJDIR)/%.o	:	%.c $(INCFILES) | $(OBJDIR)
+	$(CC) $(CFLAGS) -c -o $@ $(addprefix -I,$(INCDIR)) $<
+%.a				:
+	+@$(call libcmd, $(dir $@), all)
+
+clean			:
+	rm -rf $(OBJDIR)
+	@$(foreach dir,$(dir $(LIBS)),$(call libcmd,$(dir),clean))
+fclean			:
+	rm -f $(NAME)
+	@$(foreach dir,$(dir $(LIBS)),$(call libcmd,$(dir),fclean))

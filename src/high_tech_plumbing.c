@@ -10,13 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <unistd.h>
 #include <libft.h>
+#include <pipex.h>
+#include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <stdlib.h>
 
 static int
 	heredoc(
@@ -58,12 +59,16 @@ char **argv
 	pid_t	id;
 	int		in;
 	int		pipefd[2];
+	char	**arguments;
 
 	if (arg == 1)
 		return (open(argv[1], O_RDONLY));
 	in = pipeline_sd(arg - 1, argv);
 	if (in < 0)
 		return (-1);
+	arguments = ft_split(argv[arg], ' ');
+	if (!arguments)
+		return (close(in), -1);
 	if (pipe(pipefd))
 		return (close(in), -1);
 	id = fork();
@@ -74,7 +79,7 @@ char **argv
 		close(pipefd[0]);
 		dup2(pipefd[1], 1);
 		dup2(in, 0);
-		execve(argv[arg], NULL, NULL);
+		execve(arguments[0], arguments, NULL);
 	}
 	close(pipefd[1]);
 	close(in);
@@ -90,12 +95,16 @@ char **argv
 	pid_t	id;
 	int		in;
 	int		pipefd[2];
+	char	**arguments;
 
 	if (arg == 2)
 		return (heredoc(argv[2]));
 	in = pipeline_hd(arg - 1, argv);
 	if (in < 0)
 		return (-1);
+	arguments = ft_split(argv[arg], ' ');
+	if (!arguments)
+		return (close(in), -1);
 	if (pipe(pipefd))
 		return (close(in), -1);
 	id = fork();
@@ -106,7 +115,7 @@ char **argv
 		close(pipefd[0]);
 		dup2(pipefd[1], 1);
 		dup2(in, 0);
-		execve(argv[arg], NULL, NULL);
+		execve(arguments[0], arguments, NULL);
 	}
 	close(pipefd[1]);
 	close(in);
@@ -124,6 +133,7 @@ char **argv
 	int				in;
 	int				i;
 	pid_t			id;
+	char			**arguments;
 
 	i = 1;
 	while (++i < argc - 1)
@@ -132,6 +142,10 @@ char **argv
 	in = pipeline_sd(argc - 3, argv);
 	if (in < 0)
 		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
+	arguments = ft_split(argv[argc - 2], ' ');
+	if (!arguments)
+		return (ft_close((int[]){in, outfile, -1}),
+				ft_dprintf(2, "argument splitting failed\n"), 1);
 	id = fork();
 	if (id < 0)
 		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
@@ -139,12 +153,13 @@ char **argv
 	{
 		dup2(in, 0);
 		dup2(outfile, 1);
-		execve(argv[3], NULL, NULL);
+		execve(arguments[0], arguments, NULL);
 	}
 	while (errno != ECHILD)
 		waitpid(0, NULL, 0);
 	close(outfile);
 	close(in);
+	return (0);
 }
 
 int
@@ -158,6 +173,7 @@ char **argv
 	int				in;
 	int				i;
 	pid_t			id;
+	char	**arguments;
 
 	i = 2;
 	while (++i < argc - 1)
@@ -166,6 +182,10 @@ char **argv
 	in = pipeline_hd(argc - 3, argv);
 	if (in < 0)
 		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
+	arguments = ft_split(argv[argc - 2], ' ');
+	if (!arguments)
+		return (ft_close((int[]){in, outfile, -1}),
+				ft_dprintf(2, "argument splitting failed\n"), 1);
 	id = fork();
 	if (id < 0)
 		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
@@ -173,10 +193,11 @@ char **argv
 	{
 		dup2(in, 0);
 		dup2(outfile, 1);
-		execve(argv[3], NULL, NULL); // TODO refactor into a function
+		execve(arguments[0], arguments, NULL); // TODO refactor into a function
 	}
 	while (errno != ECHILD)
 		waitpid(0, NULL, 0);
 	close(outfile);
 	close(in);
+	return (1);
 }
