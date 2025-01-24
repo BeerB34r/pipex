@@ -10,8 +10,7 @@
 #                                                                              #
 # **************************************************************************** #
 
-.PHONY			:	all clean fclean re
-.NOTPARALELL	:	re
+.PHONY			:	all clean fclean re clangd
 .DEFAULT_GOAL	=	all
 
 MAIN			=	main.c
@@ -33,12 +32,15 @@ endef
 CC				=	cc
 CFLAGS			=	-Wall -Wextra -Werror
 VPATH			=	$(SRCDIR) $(INCDIR)
-MAKEFLAGS		+=	-j$(shell nproc) --output-sync=target --no-print-directory
+MAKEFLAGS		+=	--output-sync=target --no-print-directory
 NAME			=	pipex
 
 all				:	$(NAME)
 re				:	fclean all
+debug			:	CFLAGS += -g
+debug			:	re
 $(OBJDIR)		:	; mkdir $@
+clangd			:	fclean ; $(shell intercept-build-14 make all)
 
 $(NAME)			:	$(MAIN) $(OBJFILES) $(LIBS) $(INCFILES)
 	$(CC) $(CFLAGS) -o $@ $(addprefix -I,$(INCDIR)) $(OBJFILES) $(LIBS) $<

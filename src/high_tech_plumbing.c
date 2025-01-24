@@ -51,153 +51,87 @@ const char *delimit
 }
 
 static int
-	pipeline_sd(
-int arg,
-char **argv
+	pipeline(
+int cmds,
+char ***arguments,
+char *infile,
+bool hd
 )
 {
-	pid_t	id;
-	int		in;
-	int		pipefd[2];
-	char	**arguments;
+	int	in;
+	int	pfd[2];
 
-	if (arg == 1)
-		return (open(argv[1], O_RDONLY));
-	in = pipeline_sd(arg - 1, argv);
+	if (cmds == -1)
+	{
+		if (hd)
+			return (heredoc(infile));
+		return (open(infile, O_RDONLY));
+	}
+	in = pipeline(cmds - 1, arguments, infile, hd);
 	if (in < 0)
 		return (-1);
-	arguments = ft_split(argv[arg], ' ');
-	if (!arguments)
+	if (pipe(pfd))
 		return (close(in), -1);
-	if (pipe(pipefd))
-		return (close(in), -1);
-	id = fork();
-	if (id < 0)
-		return (close(in), close(pipefd[1]), close(pipefd[0]), -1);
-	if (!id)
-	{
-		close(pipefd[0]);
-		dup2(pipefd[1], 1);
-		dup2(in, 0);
-		execve(arguments[0], arguments, NULL);
-	}
-	close(pipefd[1]);
-	close(in);
-	return (pipefd[0]);
+	if (boss_baby((int [3]){in, pfd[1], 2}, arguments[cmds], NULL, pfd[0]))
+		return (ft_close((int []){in, pfd[0], pfd[1], -1}), -1);
+	ft_close((int []){in, pfd[1], -1});
+	return (pfd[0]);
 }
 
 static int
-	pipeline_hd(
-int arg,
-char **argv
-)
-{
-	pid_t	id;
-	int		in;
-	int		pipefd[2];
-	char	**arguments;
-
-	if (arg == 2)
-		return (heredoc(argv[2]));
-	in = pipeline_hd(arg - 1, argv);
-	if (in < 0)
-		return (-1);
-	arguments = ft_split(argv[arg], ' ');
-	if (!arguments)
-		return (close(in), -1);
-	if (pipe(pipefd))
-		return (close(in), -1);
-	id = fork();
-	if (id < 0)
-		return (close(in), close(pipefd[1]), close(pipefd[0]), -1);
-	if (!id)
-	{
-		close(pipefd[0]);
-		dup2(pipefd[1], 1);
-		dup2(in, 0);
-		execve(arguments[0], arguments, NULL);
-	}
-	close(pipefd[1]);
-	close(in);
-	return (pipefd[0]);
-}
-
-int
-	pipex_sd(
+	split_cmds(
+int start,
 int argc,
-char **argv
+char **argv,
+char ****arguments
 )
 {
-	const int		outfile = open(argv[argc - 1],
-			O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	int				in;
+	char ***const	out = ft_calloc(argc - start - 1, sizeof(char **));
 	int				i;
-	pid_t			id;
-	char			**arguments;
+	bool			fail;
 
-	i = 1;
-	while (++i < argc - 1)
-		if (access(argv[i], F_OK))
-			return (ft_dprintf(2, "command(s) invalid: %s\n", argv[i]));
-	in = pipeline_sd(argc - 3, argv);
-	if (in < 0)
-		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
-	arguments = ft_split(argv[argc - 2], ' ');
-	if (!arguments)
-		return (ft_close((int[]){in, outfile, -1}),
-				ft_dprintf(2, "argument splitting failed\n"), 1);
-	id = fork();
-	if (id < 0)
-		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
-	if (!id)
+	i = -1;
+	fail = false;
+	*arguments = NULL;
+	while (++i < argc - start - 1)
 	{
-		dup2(in, 0);
-		dup2(outfile, 1);
-		execve(arguments[0], arguments, NULL);
+		out[i] = ft_split(argv[i + start], ' ');
+		if (!out[i])
+			fail = ft_dprintf(2, "malloc failure in splitting phase\n");
+		else if (access(out[i][0], F_OK))
+			fail = ft_dprintf(2, "file %s does not exist\n", out[i][0]);
+		else if (access(out[i][0], X_OK))
+			fail = ft_dprintf(2, "file %s is not executable\n", out[i][0]);
+		if (fail)
+			return (free_matrix(out), 1);
 	}
-	while (errno != ECHILD)
-		waitpid(0, NULL, 0);
-	close(outfile);
-	close(in);
+	*arguments = out;
 	return (0);
 }
 
 int
-	pipex_hd(
+	pipex_driver(
 int argc,
-char **argv
+char **argv,
+bool heredoc
 )
 {
-	const int		outfile = open(argv[argc - 1],	
-			O_WRONLY | O_CREAT | O_APPEND, 0644);
-	int				in;
-	int				i;
-	pid_t			id;
-	char	**arguments;
+	const int		outfile = open_out(argv[argc - 1], true);
+	const int		cmds = argc - 3 - heredoc;
+	int				in; 
+	char			***arguments;
 
-	i = 2;
-	while (++i < argc - 1)
-		if (access(argv[i], F_OK))
-			return (ft_dprintf(2, "command(s) invalid: %s\n", argv[i]), 1);
-	in = pipeline_hd(argc - 3, argv);
+	if (split_cmds(2 + heredoc, argc, argv, &arguments))
+		return (close(outfile), 1);
+	in = pipeline(cmds, arguments, argv[2 + heredoc], heredoc);
 	if (in < 0)
 		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
-	arguments = ft_split(argv[argc - 2], ' ');
-	if (!arguments)
-		return (ft_close((int[]){in, outfile, -1}),
-				ft_dprintf(2, "argument splitting failed\n"), 1);
-	id = fork();
-	if (id < 0)
+	if (boss_baby((int[3]){in, outfile, 2}, arguments[argc - 5], NULL, -1))
 		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
-	if (!id)
-	{
-		dup2(in, 0);
-		dup2(outfile, 1);
-		execve(arguments[0], arguments, NULL); // TODO refactor into a function
-	}
 	while (errno != ECHILD)
 		waitpid(0, NULL, 0);
 	close(outfile);
 	close(in);
-	return (1);
+	free_matrix(arguments);
+	return (0);
 }

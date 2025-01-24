@@ -22,8 +22,8 @@ char **argv
 )
 {
 	if (ft_strncmp(argv[1], "here_doc", ft_strlen(argv[1]) + 1))
-		return (pipex_sd(argc, argv));
+		return (pipex_driver(argc, argv, 0));
 	else if (argc < 6)
 		return (usage(argv[0]));
-	return (pipex_hd(argc, argv));
+	return (pipex_driver(argc, argv, 1));
 }

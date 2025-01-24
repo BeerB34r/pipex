@@ -13,20 +13,18 @@
 #ifndef PIPEX_H
 # define PIPEX_H
 
+# include <stdbool.h>	// prototyping
+
 int	
 	pipex(
 		int argc,
 		char **argv
 		);	// FILE: pipex.c
 int	
-	pipex_sd(
+	pipex_driver(
 		int argc,
-		char **argv
-		);	// FILE: high_tech_plumbing.c
-int	
-	pipex_hd(
-		int argc,
-		char **argv
+		char **argv,
+		bool heredoc
 		);	// FILE: high_tech_plumbing.c
 int	
 	usage(
@@ -35,5 +33,21 @@ int
 void
 	ft_close(
 		int *fds
+		);	// FILE: toolbox.c
+void
+	free_matrix(
+		char ***matrix
+		);	// FILE: toolbox.c
+int	
+	open_out(
+		char *path,
+		bool append
+		);	// FILE: toolbox.c
+int	
+	boss_baby(
+		int fd[3],
+		char **argv,
+		char **envp,
+		int close_in_child
 		);	// FILE: toolbox.c
 #endif

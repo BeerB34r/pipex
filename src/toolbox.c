@@ -13,6 +13,8 @@
 #include <libft.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 void
 	ft_close(
@@ -32,4 +34,70 @@ char *bin
 	ft_printf("\t%s [here_doc] [delimiter] [cmd0 cmd1 ... cmdn] [outfile]\n",
 		bin);
 	return (1);
+}
+
+void
+	free_matrix(
+char ***matrix
+)
+{
+	int	i;
+	int	j;
+
+	i = -1;
+	while (matrix[++i])
+	{
+		j = -1;
+		while (matrix[i][++j])
+			free(matrix[i][j]);
+		free(matrix[i]);
+	}
+	free(matrix);
+}
+
+int
+	open_out(
+char *path,
+bool append
+)
+{
+	int	flags;
+	int	permissions;
+
+	flags = O_WRONLY | O_CREAT;
+	if (append)
+		flags |= O_APPEND;
+	else
+		flags |= O_TRUNC;
+	permissions = 0644;
+	return (open(path, flags, permissions));
+}
+
+int
+	boss_baby(
+int fd[3],
+char **argv,
+char **envp,
+int close_in_child
+)
+{
+	pid_t	id;
+
+	id = fork();
+	if (id < 0)
+		return (-1);
+	else if (id)
+		return (0);
+	if (close_in_child != -1)
+		close(close_in_child);
+	dup2(fd[0], 0);
+	if (fd[0] != 0)
+		close(fd[0]);
+	dup2(fd[1], 1);
+	if (fd[1] != 1)
+		close(fd[1]);
+	dup2(fd[2], 2);
+	if (fd[2] != 2)
+		close(fd[2]);
+	return (execve(argv[0], argv, envp));
 }
