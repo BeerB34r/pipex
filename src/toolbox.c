@@ -10,11 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <get_next_line_bonus.h>
 #include <libft.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <pipex.h>
 
 void
 	ft_close(
@@ -38,14 +40,16 @@ char *bin
 
 void
 	free_matrix(
-char ***matrix
+char ****input
 )
 {
-	int	i;
-	int	j;
+	char	***matrix;
+	int		i;
+	int		j;
 
 	i = -1;
-	while (matrix[++i])
+	matrix = *input;
+	while (matrix && matrix[++i])
 	{
 		j = -1;
 		while (matrix[i][++j])
@@ -82,22 +86,23 @@ int close_in_child
 )
 {
 	pid_t	id;
+	char	*path;
 
 	id = fork();
 	if (id < 0)
-		return (-1);
+		return (ft_dprintf(2, "fork failure\n"), -1);
 	else if (id)
 		return (0);
 	if (close_in_child != -1)
 		close(close_in_child);
 	dup2(fd[0], 0);
-	if (fd[0] != 0)
-		close(fd[0]);
 	dup2(fd[1], 1);
-	if (fd[1] != 1)
-		close(fd[1]);
 	dup2(fd[2], 2);
-	if (fd[2] != 2)
-		close(fd[2]);
-	return (execve(argv[0], argv, envp));
+	if (expand(argv[0], &path))
+	{
+		ft_dprintf(2, "command not found\n");
+		ft_close((int []){0, 1, 2, fd[0], fd[1], fd[2], -1});
+		exit(127);
+	}
+	exit(execve(path, argv, envp));
 }

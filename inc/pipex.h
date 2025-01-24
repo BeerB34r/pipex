@@ -6,7 +6,7 @@
 /*   By: mde-beer <mde-beer@student.codam.nl>        +#+                      */
 /*                                                  +#+                       */
 /*   Created: 2025/01/21 12:35:43 by mde-beer     #+#    #+#                  */
-/*   Updated: 2025/01/23 17:59:35 by mde-beer     ########   odam.nl          */
+/*   Updated: 2025/01/24 20:38:24 by mde-beer     ########   odam.nl          */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ void
 		);	// FILE: toolbox.c
 void
 	free_matrix(
-		char ***matrix
+		char ****matrix
 		);	// FILE: toolbox.c
 int	
 	open_out(
@@ -50,4 +50,9 @@ int
 		char **envp,
 		int close_in_child
 		);	// FILE: toolbox.c
+int
+	expand(
+		char *unexpanded,
+		char **expanded
+		);	// FILE: map.c
 #endif

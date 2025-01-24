@@ -15,7 +15,7 @@
 
 MAIN			=	main.c
 
-SRCFILES		=	pipex.c high_tech_plumbing.c toolbox.c
+SRCFILES		=	pipex.c high_tech_plumbing.c toolbox.c map.c
 SRCDIR			=	src
 
 OBJFILES		=	$(addprefix $(OBJDIR)/,$(SRCFILES:%.c=%.o))
@@ -40,7 +40,9 @@ re				:	fclean all
 debug			:	CFLAGS += -g
 debug			:	re
 $(OBJDIR)		:	; mkdir $@
-clangd			:	fclean ; $(shell intercept-build-14 make all)
+clangd			:
+	$(MAKE) fclean
+	intercept-build-14 make all
 
 $(NAME)			:	$(MAIN) $(OBJFILES) $(LIBS) $(INCFILES)
 	$(CC) $(CFLAGS) -o $@ $(addprefix -I,$(INCDIR)) $(OBJFILES) $(LIBS) $<

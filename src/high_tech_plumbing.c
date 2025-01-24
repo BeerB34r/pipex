@@ -69,9 +69,9 @@ bool hd
 	}
 	in = pipeline(cmds - 1, arguments, infile, hd);
 	if (in < 0)
-		return (-1);
+		return (ft_dprintf(2, "previous pipe failed\n"), -1);
 	if (pipe(pfd))
-		return (close(in), -1);
+		return (ft_dprintf(2, "pipe cmd failed\n"),close(in), -1);
 	if (boss_baby((int [3]){in, pfd[1], 2}, arguments[cmds], NULL, pfd[0]))
 		return (ft_close((int []){in, pfd[0], pfd[1], -1}), -1);
 	ft_close((int []){in, pfd[1], -1});
@@ -86,7 +86,7 @@ char **argv,
 char ****arguments
 )
 {
-	char ***const	out = ft_calloc(argc - start - 1, sizeof(char **));
+	char ***const	out = ft_calloc(argc - start, sizeof(char **));
 	int				i;
 	bool			fail;
 
@@ -98,12 +98,8 @@ char ****arguments
 		out[i] = ft_split(argv[i + start], ' ');
 		if (!out[i])
 			fail = ft_dprintf(2, "malloc failure in splitting phase\n");
-		else if (access(out[i][0], F_OK))
-			fail = ft_dprintf(2, "file %s does not exist\n", out[i][0]);
-		else if (access(out[i][0], X_OK))
-			fail = ft_dprintf(2, "file %s is not executable\n", out[i][0]);
 		if (fail)
-			return (free_matrix(out), 1);
+			return (free_matrix((char ****)&out), 1);
 	}
 	*arguments = out;
 	return (0);
@@ -116,22 +112,22 @@ char **argv,
 bool heredoc
 )
 {
-	const int		outfile = open_out(argv[argc - 1], true);
+	const int		outfile = open_out(argv[argc - 1], heredoc);
 	const int		cmds = argc - 3 - heredoc;
 	int				in; 
 	char			***arguments;
 
 	if (split_cmds(2 + heredoc, argc, argv, &arguments))
 		return (close(outfile), 1);
-	in = pipeline(cmds, arguments, argv[2 + heredoc], heredoc);
+	in = pipeline(cmds - 2, arguments, argv[1 + heredoc], heredoc);
 	if (in < 0)
 		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
-	if (boss_baby((int[3]){in, outfile, 2}, arguments[argc - 5], NULL, -1))
+	if (boss_baby((int[3]){in, outfile, 2}, arguments[cmds - 1], NULL, -1))
 		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
 	while (errno != ECHILD)
 		waitpid(0, NULL, 0);
 	close(outfile);
 	close(in);
-	free_matrix(arguments);
+	free_matrix(&arguments);
 	return (0);
 }
