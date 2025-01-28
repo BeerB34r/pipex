@@ -71,8 +71,8 @@ bool hd
 	if (in < 0)
 		return (ft_dprintf(2, "previous pipe failed\n"), -1);
 	if (pipe(pfd))
-		return (ft_dprintf(2, "pipe cmd failed\n"),close(in), -1);
-	if (boss_baby((int [3]){in, pfd[1], 2}, arguments[cmds], NULL, pfd[0]))
+		return (ft_dprintf(2, "pipe cmd failed\n"), close(in), -1);
+	if (boss_baby((int [3]){in, pfd[1], 2}, arguments[cmds], pfd[0]))
 		return (ft_close((int []){in, pfd[0], pfd[1], -1}), -1);
 	ft_close((int []){in, pfd[1], -1});
 	return (pfd[0]);
@@ -114,18 +114,16 @@ bool heredoc
 {
 	const int		outfile = open_out(argv[argc - 1], heredoc);
 	const int		cmds = argc - 3 - heredoc;
-	int				in; 
 	char			***arguments;
+	int				in;
 
 	if (split_cmds(2 + heredoc, argc, argv, &arguments))
 		return (close(outfile), 1);
 	in = pipeline(cmds - 2, arguments, argv[1 + heredoc], heredoc);
 	if (in < 0)
 		return (close(outfile), ft_dprintf(2, "pipeline failed\n"), 1);
-	if (boss_baby((int[3]){in, outfile, 2}, arguments[cmds - 1], NULL, -1))
+	if (boss_baby((int [3]){in, outfile, 2}, arguments[cmds - 1], -1))
 		return (close(outfile), close(in), ft_dprintf(2, "fork failure\n"), 1);
-	while (errno != ECHILD)
-		waitpid(0, NULL, 0);
 	close(outfile);
 	close(in);
 	free_matrix(&arguments);

@@ -47,10 +47,9 @@ int
 	boss_baby(
 		int fd[3],
 		char **argv,
-		char **envp,
 		int close_in_child
 		);	// FILE: toolbox.c
-int
+int	
 	expand(
 		char *unexpanded,
 		char **expanded

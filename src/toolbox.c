@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#define _GNU_SOURCE
 #include <get_next_line_bonus.h>
 #include <libft.h>
 #include <unistd.h>
@@ -27,7 +28,7 @@ int *fds
 		close(*fds++);
 }
 
-int
+int	
 	usage(
 char *bin
 )
@@ -59,7 +60,7 @@ char ****input
 	free(matrix);
 }
 
-int
+int	
 	open_out(
 char *path,
 bool append
@@ -77,11 +78,10 @@ bool append
 	return (open(path, flags, permissions));
 }
 
-int
+int	
 	boss_baby(
 int fd[3],
 char **argv,
-char **envp,
 int close_in_child
 )
 {
@@ -104,5 +104,5 @@ int close_in_child
 		ft_close((int []){0, 1, 2, fd[0], fd[1], fd[2], -1});
 		exit(127);
 	}
-	exit(execve(path, argv, envp));
+	exit(execve(path, argv, environ));
 }

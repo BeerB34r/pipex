@@ -10,7 +10,7 @@
 #                                                                              #
 # **************************************************************************** #
 
-.PHONY			:	all clean fclean re clangd
+.PHONY			:	all clean fclean re clangd bonus
 .DEFAULT_GOAL	=	all
 
 MAIN			=	main.c
@@ -36,6 +36,7 @@ MAKEFLAGS		+=	--output-sync=target --no-print-directory
 NAME			=	pipex
 
 all				:	$(NAME)
+bonus			:	all
 re				:	fclean all
 debug			:	CFLAGS += -g
 debug			:	re
